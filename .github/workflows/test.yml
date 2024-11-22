@@ -4,10 +4,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - runs:
-          using: node20
-          main: dist/index.js
-          post: dist/index.js
+      - name: github-action-timing
+        uses: ./
       - uses: actions/checkout@v2
       - name: Use Node.js
         uses: actions/setup-node@v4
