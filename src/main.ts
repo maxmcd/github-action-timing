@@ -65,7 +65,25 @@ async function cleanup(): Promise<void> {
 		const content = fs.readFileSync(latestWorkerLog, "utf-8");
 		const telemetryData = parseLogFile(content);
 		console.log("Found step telemetry entries:", telemetryData.length);
-		console.log(JSON.stringify(telemetryData, null, 2));
+		console.log(
+			JSON.stringify(
+				{
+					telemetryData,
+					GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
+					GITHUB_RUN_ATTEMPT: process.env.GITHUB_RUN_ATTEMPT,
+					GITHUB_RUN_ID: process.env.GITHUB_RUN_ID,
+					GITHUB_RUN_NUMBER: process.env.GITHUB_RUN_NUMBER,
+					GITHUB_SHA: process.env.GITHUB_SHA,
+					GITHUB_TRIGGERING_ACTOR: process.env.GITHUB_TRIGGERING_ACTOR,
+					GITHUB_WORKFLOW: process.env.GITHUB_WORKFLOW,
+					GITHUB_WORKFLOW_REF: process.env.GITHUB_WORKFLOW_REF,
+					GITHUB_WORKFLOW_SHA: process.env.GITHUB_WORKFLOW_SHA,
+					GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE,
+				},
+				null,
+				2,
+			),
+		);
 
 		// Upload event.json to file drop service
 		const formData = new FormData();
