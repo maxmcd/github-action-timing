@@ -39,6 +39,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseLogFile = parseLogFile;
 const stateHelper = __importStar(__nccwpck_require__(590));
 const fs = __importStar(__nccwpck_require__(3024));
 const path = __importStar(__nccwpck_require__(6760));
@@ -62,34 +63,13 @@ function cleanup() {
             }
             return path.join(directoryPath, workerFiles[0]);
         }
-        function parseLogFile(filePath) {
-            const content = fs.readFileSync(filePath, "utf-8");
-            const lines = content.split("\n");
-            const telemetryData = [];
-            // Regular expression to match the telemetry log entries
-            const telemetryRegex = /\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z INFO ExecutionContext\] Publish step telemetry for current step ({[\s\S]*?})/;
-            for (const line of lines) {
-                if (line.includes("Publish step telemetry for current step")) {
-                    const match = line.match(telemetryRegex);
-                    if (match) {
-                        try {
-                            const jsonData = JSON.parse(match[1]);
-                            telemetryData.push(jsonData);
-                        }
-                        catch (error) {
-                            console.error("Error parsing JSON:", error);
-                        }
-                    }
-                }
-            }
-            return telemetryData;
-        }
         // Main execution
         try {
             const directoryPath = "/home/runner/runners/2.320.0/_diag";
             const latestWorkerLog = getLatestWorkerLog(directoryPath);
             console.log(`Processing file: ${latestWorkerLog}`);
-            const telemetryData = parseLogFile(latestWorkerLog);
+            const content = fs.readFileSync(latestWorkerLog, "utf-8");
+            const telemetryData = parseLogFile(content);
             console.log("Found step telemetry entries:", telemetryData.length);
             console.log(JSON.stringify(telemetryData, null, 2));
         }
@@ -98,6 +78,24 @@ function cleanup() {
             process.exit(1);
         }
     });
+}
+function parseLogFile(content) {
+    const telemetryData = [];
+    // Regular expression to match the telemetry log entries
+    const telemetryRegex = /\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z INFO ExecutionContext\] Publish step telemetry for current step (\{[\s\S]*?\}\s*\.)/gm;
+    const matches = content.matchAll(telemetryRegex);
+    for (const match of matches) {
+        try {
+            // Remove the trailing period and parse JSON
+            const jsonStr = match[1].replace(/\.\s*$/, "");
+            const jsonData = JSON.parse(jsonStr);
+            telemetryData.push(jsonData);
+        }
+        catch (error) {
+            console.error("Error parsing JSON:", error);
+        }
+    }
+    return telemetryData;
 }
 // Main
 if (!stateHelper.IsPost) {
