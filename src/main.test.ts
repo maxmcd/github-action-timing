@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { parseLogFile } from "./main";
 
 describe("main", () => {
-	it("parse log file", () => {
+	it("parse log file", async () => {
 		const contents = `
 [2024-11-22 16:33:21Z INFO StepsRunner] Step result:
 [2024-11-22 17:02:09Z INFO StepsRunner] Processing step: DisplayName='asdfsd'
@@ -34,6 +34,7 @@ describe("main", () => {
   "finishTime": "2024-11-22T16:33:21.0406508Z"
 }.
 `;
+
 		const result = parseLogFile(contents);
 		console.log(result);
 		expect(result).toHaveLength(2);

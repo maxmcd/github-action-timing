@@ -52,7 +52,11 @@ async function cleanup(): Promise<void> {
 		const content = fs.readFileSync(latestWorkerLog, "utf-8");
 		// Upload the log file content to the file drop service
 		const formData = new FormData();
-		formData.append("log.log", new Blob([content], { type: "text/plain" }));
+		formData.append(
+			"file",
+			new Blob([content], { type: "text/plain" }),
+			"log.log",
+		);
 		const response = await fetch(
 			"https://maxm-internalfiledrop.web.val.run/upload",
 			{
