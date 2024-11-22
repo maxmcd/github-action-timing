@@ -5,6 +5,8 @@ describe("main", () => {
 	it("parse log file", () => {
 		const contents = `
 [2024-11-22 16:33:21Z INFO StepsRunner] Step result:
+[2024-11-22 17:02:09Z INFO StepsRunner] Processing step: DisplayName='asdfsd'
+[2024-11-22 17:02:09Z INFO StepsRunner] Evaluating: success()
 [2024-11-22 16:33:21Z INFO ExecutionContext] Publish step telemetry for current step {
   "action": "sh",
   "type": "run",
@@ -17,6 +19,8 @@ describe("main", () => {
   "startTime": "2024-11-22T16:33:19.3107228Z",
   "finishTime": "2024-11-22T16:33:21.0406508Z"
 }.
+[2024-11-22 17:02:09Z INFO StepsRunner] Processing step: DisplayName='github-action-timing'
+[2024-11-22 17:02:09Z INFO StepsRunner] Evaluating: success()
 [2024-11-22 16:33:21Z INFO ExecutionContext] Publish step telemetry for current step {
   "action": "sh",
   "type": "run",
@@ -31,6 +35,7 @@ describe("main", () => {
 }.
 `;
 		const result = parseLogFile(contents);
+		console.log(result);
 		expect(result).toHaveLength(2);
 	});
 });
