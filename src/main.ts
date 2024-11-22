@@ -25,6 +25,11 @@ interface StepTelemetry {
 	displayName: string;
 }
 
+interface PerfEvent {
+	timestamp: string;
+	name: string;
+}
+
 async function cleanup(): Promise<void> {
 	function getLatestWorkerLog(directoryPath: string): string {
 		// Get all files in the directory
@@ -45,36 +50,70 @@ async function cleanup(): Promise<void> {
 
 	// Main execution
 	try {
-		const directoryPath = "/home/runner/runners/2.320.0/_diag";
+		const runnersDir = "/home/runner/runners";
+		const versions = fs
+			.readdirSync(runnersDir)
+			.filter((dir) => !Number.isNaN(Number.parseFloat(dir))) // Only include version number directories
+			.sort((a, b) => Number.parseFloat(b) - Number.parseFloat(a)); // Sort in descending order
+		if (versions.length === 0) {
+			throw new Error("No runner versions found");
+		}
+		const directoryPath = path.join(runnersDir, versions[0], "_diag");
 		const latestWorkerLog = getLatestWorkerLog(directoryPath);
 		console.log(`Processing file: ${latestWorkerLog}`);
 
 		const content = fs.readFileSync(latestWorkerLog, "utf-8");
-		// Upload the log file content to the file drop service
-		const formData = new FormData();
-		formData.append(
-			"file",
-			new Blob([content], { type: "text/plain" }),
-			"log.log",
-		);
-		const response = await fetch(
-			"https://maxm-internalfiledrop.web.val.run/upload",
-			{
-				method: "POST",
-				body: formData,
-			},
-		);
-
-		if (!response.ok) {
-			throw new Error(`Upload failed with status ${response.status}`);
-		}
 		const telemetryData = parseLogFile(content);
 		console.log("Found step telemetry entries:", telemetryData.length);
 		console.log(JSON.stringify(telemetryData, null, 2));
+
+		// // Parse perf logs
+		// const runnerPerfLog = fs.readFileSync(
+		// 	"/home/runner/perflog/Runner.perf",
+		// 	"utf-8",
+		// );
+		// const workerPerfLog = fs.readFileSync(
+		// 	"/home/runner/perflog/Worker.perf",
+		// 	"utf-8",
+		// );
+		// const perfEvents = parsePerfLogs(runnerPerfLog, workerPerfLog);
+		// console.log("Found perf events:", perfEvents.length);
+		// console.log(JSON.stringify(perfEvents, null, 2));
 	} catch (error) {
 		console.error("Error:", error);
 		process.exit(1);
 	}
+}
+
+export function parsePerfLogs(
+	runnerLog: string,
+	workerLog: string,
+): PerfEvent[] {
+	const events: PerfEvent[] = [];
+
+	function parseLogLines(content: string) {
+		const lines = content.split("\n");
+		for (const line of lines) {
+			if (!line.trim()) continue;
+			const [name, ...timestampParts] = line.split(":");
+			const timestamp = timestampParts.join(":");
+
+			if (timestamp) {
+				events.push({
+					timestamp,
+					name,
+				});
+			}
+		}
+	}
+
+	parseLogLines(runnerLog);
+	parseLogLines(workerLog);
+
+	// Sort by timestamp
+	return events.sort(
+		(a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+	);
 }
 
 export function parseLogFile(content: string): StepTelemetry[] {
@@ -82,9 +121,11 @@ export function parseLogFile(content: string): StepTelemetry[] {
 
 	// Regular expression to match both the DisplayName line and telemetry entries
 	const stepRegex =
-		/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z INFO StepsRunner\] Processing step: DisplayName='([^']+)'\s*(?:[\s\S]*?)\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z INFO ExecutionContext\] Publish step telemetry for current step (\{[\s\S]*?\}\s*\.)/gm;
+		/INFO StepsRunner\] Processing step: DisplayName='([^']+)'\s*(?:[\s\S]*?)\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z INFO ExecutionContext\] Publish step telemetry for current step (\{[\s\S]*?\}\s*\.)/gm;
 
-	const matches = content.matchAll(stepRegex);
+	// Add a fake Set up job display name so that we get those stats as well.
+	const fixupContent = `INFO StepsRunner\] Processing step: DisplayName='Set up job'\n${content}`;
+	const matches = fixupContent.matchAll(stepRegex);
 	for (const match of matches) {
 		try {
 			const displayName = match[1];

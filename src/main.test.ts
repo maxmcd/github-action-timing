@@ -1,42 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { parseLogFile } from "./main";
-
+import { parseLogFile, parsePerfLogs } from "./main";
+import fs from "node:fs";
 describe("main", () => {
 	it("parse log file", async () => {
-		const contents = `
-[2024-11-22 16:33:21Z INFO StepsRunner] Step result:
-[2024-11-22 17:02:09Z INFO StepsRunner] Processing step: DisplayName='asdfsd'
-[2024-11-22 17:02:09Z INFO StepsRunner] Evaluating: success()
-[2024-11-22 16:33:21Z INFO ExecutionContext] Publish step telemetry for current step {
-  "action": "sh",
-  "type": "run",
-  "stage": "Main",
-  "stepId": "dd23db01-cff6-57a4-373a-5c8097a97333",
-  "stepContextName": "__run",
-  "result": "succeeded",
-  "errorMessages": [],
-  "executionTimeInSeconds": 2,
-  "startTime": "2024-11-22T16:33:19.3107228Z",
-  "finishTime": "2024-11-22T16:33:21.0406508Z"
-}.
-[2024-11-22 17:02:09Z INFO StepsRunner] Processing step: DisplayName='github-action-timing'
-[2024-11-22 17:02:09Z INFO StepsRunner] Evaluating: success()
-[2024-11-22 16:33:21Z INFO ExecutionContext] Publish step telemetry for current step {
-  "action": "sh",
-  "type": "run",
-  "stage": "Main",
-  "stepId": "dd23db01-cff6-57a4-373a-5c8097a97333",
-  "stepContextName": "__run",
-  "result": "succeeded",
-  "errorMessages": [],
-  "executionTimeInSeconds": 2,
-  "startTime": "2024-11-22T16:33:19.3107228Z",
-  "finishTime": "2024-11-22T16:33:21.0406508Z"
-}.
-`;
-
+		const contents = fs.readFileSync(`${__dirname}/testdata/log.log`, "utf-8");
 		const result = parseLogFile(contents);
 		console.log(result);
-		expect(result).toHaveLength(2);
+		expect(result).toHaveLength(8);
+	});
+	it("parse perf logs", () => {
+		const runnerLog = fs.readFileSync(
+			`${__dirname}/testdata/Runner.perf`,
+			"utf-8",
+		);
+		const workerLog = fs.readFileSync(
+			`${__dirname}/testdata/Worker.perf`,
+			"utf-8",
+		);
+		const result = parsePerfLogs(runnerLog, workerLog);
+		console.log(result);
+		expect(result).toHaveLength(13);
 	});
 });

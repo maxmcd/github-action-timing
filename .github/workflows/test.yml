@@ -12,5 +12,4 @@ jobs:
       - name: npm install
         run: npm install
       - run: npm run build
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
+      - run: npm run test
